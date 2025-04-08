@@ -24,7 +24,7 @@ class FaceSwapModel:
             output_path = f"/tmp/output_{unique_id}.png"
 
             command = f"""
-                python facefusion.py headless-run \
+                python3 facefusion.py headless-run \
                 --source-path {src_path} \
                 --target-path {tgt_path} \
                 --output-path {output_path} \
@@ -95,7 +95,7 @@ class AIToolsAPI:
     face_swap_batch = bentoml.depends(FaceSwapBatchService)
 
     @bentoml.api
-    async def face_swap(self, source_image: str = "", target_image: str = "") -> dict:
+    async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
         result = await self.face_swap_batch.batch_face_swap([
             FaceSwapRequest(source_image=source_image, target_image=target_image)
         ])
