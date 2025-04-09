@@ -25,8 +25,7 @@ class FaceSwapModel:
 
             command = f"""
                 python3 facefusion.py headless-run -s {src_path}  -t {tgt_path} -o {output_path} \
-                --execution-providers cuda \
-                --processors face_swapper face_enhancer
+                --processors face_swapper face_enhancer --execution-providers cuda
             """
             print(f"Running command: {command}")
 
