@@ -8,9 +8,6 @@ import aiohttp
 import bentoml
 from pydantic import BaseModel
 from facefusion import core
-from facefusion.typing import Args
-from PIL import Image
-
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -25,18 +22,19 @@ class FaceSwapModel:
             src_path = await self.decode_or_download_image(input.source_image, unique_id, "source")
             tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
-            args = Args(
-                source_path=src_path,
-                target_path=tgt_path,
-                output_path=output_path,
-                execution_provider='cuda',
-                face_analyser_model='buffalo_l',
-                face_enhancer_model='gfpgan_1.4',
+
+            core.headless_run(
+                source=src_path,
+                target=tgt_path,
+                output=output_path,
+                execution_provider='cuda',  # Use 'cpu' if CUDA is not available
+                face_analyser_model='buffalo_l',  # or 'yandex'
+                face_enhancer_model='gfpgan_1.4',  # or 'yandex'
                 keep_fps=True,
                 skip_audio=True,
                 output_image_quality=100
             )
-            core.process_headless(args)
+
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
 
