@@ -24,7 +24,8 @@ class FaceSwapModel:
             output_path = f"/tmp/output_{unique_id}.png"
 
             command = f"""
-                python3 facefusion.py headless-run -s {src_path}  -t {tgt_path} -o {output_path}
+                python3 facefusion.py headless-run -s {src_path}  -t {tgt_path} -o {output_path} \
+                --processors face_swapper face_enhancer
             """
             print(f"Running command: {command}")
 
