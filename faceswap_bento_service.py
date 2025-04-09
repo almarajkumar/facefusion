@@ -36,8 +36,7 @@ class FaceSwapModel:
                 skip_audio=True,
                 output_image_quality=100
             )
-            core.process_headless()
-
+            core.process_headless(args)
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
 
