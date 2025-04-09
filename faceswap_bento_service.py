@@ -25,9 +25,7 @@ class FaceSwapModel:
 
             command = f"""
                 python3 facefusion.py headless-run \
-                --s {src_path} \
-                --t {tgt_path} \
-                --o {output_path} \
+                -s {src_path}  -t {tgt_path} -o {output_path} \
                 --face-enhancer-model gfpgan_1.4 \
                 --execution-providers cuda
             """
