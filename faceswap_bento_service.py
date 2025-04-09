@@ -7,7 +7,7 @@ from typing import List
 import aiohttp
 import bentoml
 from pydantic import BaseModel
-from facefusion import core
+
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -23,17 +23,18 @@ class FaceSwapModel:
             tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
 
-            core.headless_run(
-                source=src_path,
-                target=tgt_path,
-                output=output_path,
-                execution_provider='cuda',  # Use 'cpu' if CUDA is not available
-                face_analyser_model='buffalo_l',  # or 'yandex'
-                face_enhancer_model='gfpgan_1.4',  # or 'yandex'
-                keep_fps=True,
-                skip_audio=True,
-                output_image_quality=100
+            command = f"""
+                python3 facefusion.py headless-run \
+                -s {src_path}  -t {tgt_path} -o {output_path} \
+                --face-enhancer-model gfpgan_1.4 \
+                --execution-providers cuda
+            """
+            print(f"Running command: {command}")
+
+            process = await asyncio.create_subprocess_exec(
+                "/bin/bash", "-c", command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
+            await process.communicate()
 
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
