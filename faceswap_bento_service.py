@@ -31,9 +31,19 @@ class FaceSwapModel:
             print(f"Running command: {command}")
 
             process = await asyncio.create_subprocess_exec(
-                "/bin/bash", "-c", command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                "/bin/bash", "-c", command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            await process.communicate()
+
+            stdout, stderr = await process.communicate()
+
+            # Decode and print
+            if stdout:
+                print(f"[STDOUT]\n{stdout.decode().strip()}")
+
+            if stderr:
+                print(f"[STDERR]\n{stderr.decode().strip()}")
 
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
