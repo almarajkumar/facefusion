@@ -35,9 +35,9 @@ class FaceSwapModel:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-
+            print(f"After Running command: {command}")
             stdout, stderr = await process.communicate()
-
+            print(f"After stdout")
             # Decode and print
             if stdout:
                 print(f"[STDOUT]\n{stdout.decode().strip()}")
