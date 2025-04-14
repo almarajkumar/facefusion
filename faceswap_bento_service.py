@@ -7,7 +7,7 @@ from typing import List
 import aiohttp
 import bentoml
 from pydantic import BaseModel
-
+from facefusion import core
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -22,34 +22,18 @@ class FaceSwapModel:
             tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
 
-            command = f"""
-                python3 facefusion.py headless-run -s {src_path} -t {tgt_path} -o {output_path} \
-                --face-selector-order top-bottom \
-                --processors face_swapper face_enhancer --execution-providers cuda
-            """.replace("\n", " ").strip()
 
-            print(f"[INFO] Running command: {command}")
 
-            process = await asyncio.create_subprocess_exec(
-                "/bin/bash", "-c", command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
+            args = {
+                'source-paths': src_path,
+                'output-path': output_path,
+                'target-path': tgt_path,
+                'face-selector-order': "top-bottom",
+                'processors': "face_swapper face_enhancer",
+                'execution-providers': "cuda",
+            }
 
-            stdout_text = stdout.decode().strip()
-            stderr_text = stderr.decode().strip()
-
-            print(f"[STDOUT]\n{stdout_text}")
-            print(f"[STDERR]\n{stderr_text}")
-
-            if process.returncode != 0:
-                print(f"[ERROR] Process exited with code {process.returncode}")
-                return None
-
-            if not os.path.exists(output_path):
-                print(f"[ERROR] Output file not found at {output_path}")
-                return None
+            result = core.process_headless(args)
 
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
