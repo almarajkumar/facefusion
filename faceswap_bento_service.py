@@ -53,8 +53,7 @@ class FaceSwapModel:
 
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
-
-        except Exception as e:
+       except Exception as e:
             print(f"[EXCEPTION] Face swap failed: {e}")
             return None
 
