@@ -27,7 +27,7 @@ class FaceSwapModel:
                 "-s", src_path, "-t", tgt_path, "-o", output_path,
                 "--face-selector-order", "top-bottom",
                 "--processors", "face_swapper", "face_enhancer",
-                "--execution-providers", "tensorrt",
+                "--execution-providers", "cuda", "tensorrt", "cpu",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
