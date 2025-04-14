@@ -22,16 +22,12 @@ class FaceSwapModel:
             tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
 
-            command = f"""
-                python3 facefusion.py headless-run -s {src_path} -t {tgt_path} -o {output_path} \
-                --face-selector-order top-bottom \
-                --processors face_swapper face_enhancer --execution-providers cuda
-            """.replace("\n", " ").strip()
-
-            print(f"[INFO] Running command: {command}")
-
             process = await asyncio.create_subprocess_exec(
-                "/bin/bash", "-c", command,
+                "python3", "facefusion.py", "headless-run",
+                "-s", src_path, "-t", tgt_path, "-o", output_path,
+                "--face-selector-order", "top-bottom",
+                "--processors", "face_swapper", "face_enhancer",
+                "--execution-providers", "cuda",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
