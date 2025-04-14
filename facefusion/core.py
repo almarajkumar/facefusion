@@ -255,7 +255,7 @@ def route_job_runner() -> ErrorCode:
 def process_headless(args : Args) -> ErrorCode:
 	job_id = job_helper.suggest_job_id('headless')
 	step_args = reduce_step_args(args)
-	print("step_args:", step_args)
+
 	if job_manager.create_job(job_id) and job_manager.add_step(job_id, step_args) and job_manager.submit_job(job_id) and job_runner.run_job(job_id, process_step):
 		return 0
 	return 1
