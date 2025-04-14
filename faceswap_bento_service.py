@@ -103,7 +103,7 @@ class FaceSwapBatchService:
             img_base64 = await self.model.swap_face(input)
             return {"image": img_base64}
 
-        return await asyncio.gather(*[process_one(i) for i in inputs])
+        return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
 
 
 @bentoml.service
