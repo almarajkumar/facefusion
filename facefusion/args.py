@@ -8,6 +8,12 @@ from facefusion.vision import create_image_resolutions, create_video_resolutions
 
 
 def reduce_step_args(args : Args) -> Args:
+	source_paths = args.get('source_path')
+	output_path = args.get('output_path')
+	target_path = args.get('target_path')
+	print("source_path:", source_paths)
+	print("output_path:", output_path)
+	print("target_path:", target_path)
 	step_args =\
 	{
 		key: args[key] for key in args if key in job_store.get_step_keys()

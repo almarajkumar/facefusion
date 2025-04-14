@@ -34,7 +34,7 @@ class FaceSwapModel:
             }
 
             result = core.process_headless(args)
-
+            print(f"result: {result}")
             with open(output_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
 
