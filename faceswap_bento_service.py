@@ -25,12 +25,12 @@ class FaceSwapModel:
 
 
             args = {
-                'source-paths': src_path,
-                'output-path': output_path,
-                'target-path': tgt_path,
-                'face-selector-order': "top-bottom",
+                'source_path': src_path,
+                'output_path': output_path,
+                'target_path': tgt_path,
+                'face_selector_order': "top-bottom",
                 'processors': "face_swapper face_enhancer",
-                'execution-providers': "cuda",
+                'execution_providers': "cuda",
             }
 
             result = core.process_headless(args)
