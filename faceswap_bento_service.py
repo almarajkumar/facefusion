@@ -15,9 +15,10 @@ class FaceSwapRequest(BaseModel):
 
 
 class FaceSwapModel:
-    semaphore = asyncio.Semaphore(1)
+    def __init__(self):
+        self.semaphore = asyncio.Semaphore(1)
     async def swap_face(self, input: FaceSwapRequest) -> str:
-        async with semaphore:
+        async with self.semaphore:
             try:
                 unique_id = str(uuid.uuid4())
                 src_path = await self.decode_or_download_image(input.source_image, unique_id, "source")
