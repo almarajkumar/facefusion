@@ -99,6 +99,7 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
+            await asyncio.sleep(0.1)
             img_base64 = await self.model.swap_face(input)
             return {"image": img_base64}
 
