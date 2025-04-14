@@ -96,7 +96,7 @@ class FaceSwapBatchService:
     def __init__(self):
         self.model = FaceSwapModel()
 
-    @bentoml.api(batchable=True)
+    @bentoml.api()
     async def face_swap(self, input: FaceSwapRequest) -> dict:
         print("[INFO] Processing single face swap request")
         img_base64 = await self.model.swap_face(input)
@@ -119,6 +119,7 @@ class AIToolsAPI:
 
     @bentoml.api
     async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
-        return await self.face_swap_batch.face_swap(
+        result = await self.face_swap_batch.batch_face_swap([
             FaceSwapRequest(source_image=source_image, target_image=target_image)
-        )
+        ])
+        return result[0]
