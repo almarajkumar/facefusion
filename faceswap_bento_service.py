@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from PIL import Image
 import base64
 import io
+from io import BytesIO
 
 class FaceSwapRequest(BaseModel):
     source_image: str
