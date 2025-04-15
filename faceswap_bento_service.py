@@ -18,6 +18,7 @@ class FaceSwapRequest(BaseModel):
 
 class RemBGRequest(BaseModel):
     source_image: str
+    model: str
 
 gpu_semaphore = asyncio.Semaphore(4)
 class RemBGModel:
@@ -176,5 +177,5 @@ class AIToolsAPI:
 
     @bentoml.api
     async def rembg(self, source_image: str = "") -> dict:
-        result = await self.rembg_batch.rembg(RemBGRequest(source_image = source_image))
+        result = await self.rembg_batch.rembg(RemBGRequest(source_image = source_image, model=""))
         return result
