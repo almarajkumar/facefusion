@@ -173,5 +173,5 @@ class AIToolsAPI:
 
     @bentoml.api
     async def rembg(self, source_image: str = "") -> dict:
-        result = await self.rembg_batch.batch_rembg([source_image])
-        return result[0]
+        result = await self.rembg_batch.rembg(source_image)
+        return result
