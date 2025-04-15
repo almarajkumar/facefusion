@@ -7,7 +7,9 @@ import rembg
 import aiohttp
 import bentoml
 from pydantic import BaseModel
-
+from PIL import Image
+import base64
+import io
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -35,7 +37,7 @@ class RemBGModel:
             return {"image": img_str}
         except Exception as e:
             print(f"[EXCEPTION] Rembg failed: {e}")
-            return None
+            return {"error": "Failed"}
 class FaceSwapModel:
     async def swap_face(self, input: FaceSwapRequest) -> str:
        try:
@@ -151,8 +153,8 @@ class RemoveBgBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: str):
-            img_base64 = await self.model.rembg(input)
-            return {"image": img_base64}
+            response = await self.model.rembg(input)
+            return response
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
 
