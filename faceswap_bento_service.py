@@ -137,7 +137,7 @@ class RemoveBgBatchService:
 @bentoml.service
 class AIToolsAPI:
     def __init__(self):
-        self.rembg_batch = bentoml.depends(RemoveBgBatchService)()
+        self.rembg_batch = bentoml.depends(RemoveBgBatchService)
         self.face_swap_batch = bentoml.depends(FaceSwapBatchService)
 
     @bentoml.api
