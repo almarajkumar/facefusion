@@ -16,11 +16,14 @@ class FaceSwapRequest(BaseModel):
     source_image: str
     target_image: str
 
+class RemBGRequest(BaseModel):
+    source_image: str
+
 gpu_semaphore = asyncio.Semaphore(4)
 class RemBGModel:
-    async def rembg(self, input: str) -> dict:
+    async def rembg(self, input: RemBGRequest) -> dict:
         try:
-            im = Image.open(BytesIO(base64.b64decode(input)))
+            im = Image.open(BytesIO(base64.b64decode(input.source_image)))
 
             image = rembg.remove(
                 im,
@@ -144,7 +147,7 @@ class RemoveBgBatchService:
         self.model = RemBGModel()
 
     @bentoml.api()
-    async def rembg(self, input: str) -> dict:
+    async def rembg(self, input: RemBGRequest) -> dict:
         print("[INFO] Processing single Rembg request")
         response = await asyncio.to_thread(self.model.rembg, input)
         return response
@@ -173,5 +176,5 @@ class AIToolsAPI:
 
     @bentoml.api
     async def rembg(self, source_image: str = "") -> dict:
-        result = await self.rembg_batch.rembg(source_image)
+        result = await self.rembg_batch.rembg(RemBGRequest(source_image = source_image))
         return result
