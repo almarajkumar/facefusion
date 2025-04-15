@@ -13,7 +13,7 @@ class FaceSwapRequest(BaseModel):
     source_image: str
     target_image: str
 
-gpu_semaphore = asyncio.Semaphore(1)
+gpu_semaphore = asyncio.Semaphore(3)
 class FaceSwapModel:
     async def swap_face(self, input: FaceSwapRequest) -> str:
        try:
