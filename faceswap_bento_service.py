@@ -18,7 +18,7 @@ class FaceSwapRequest(BaseModel):
 
 gpu_semaphore = asyncio.Semaphore(4)
 class RemBGModel:
-    async def rembg(self, input: str) -> dict:
+    def rembg(self, input: str) -> dict:
         try:
             im = Image.open(BytesIO(base64.b64decode(input)))
 
