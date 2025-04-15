@@ -116,7 +116,7 @@ class FaceSwapBatchService:
     @bentoml.api()
     async def face_swap(self, input: FaceSwapRequest) -> dict:
         print("[INFO] Processing single face swap request")
-        img_base64 = await self.model.swap_face(input)
+        img_base64 = await asyncio.to_thread(self.model.swap_face, input)
         return {"image": img_base64}
 
     @bentoml.api(batchable=True)
@@ -124,7 +124,7 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
-            img_base64 = await self.model.swap_face(input)
+            img_base64 = await asyncio.to_thread(self.model.swap_face, input)
             return {"image": img_base64}
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
@@ -170,6 +170,19 @@ class AIToolsAPI:
         return result
 
     @bentoml.api
-    async def rembg(self, source_image: str = "") -> dict:
+    async def faceswap_batch(self, source_image: str = "", target_image: str = "") -> dict:
+        result = await self.face_swap_batch.batch_face_swap(
+            [FaceSwapRequest(source_image=source_image, target_image=target_image)]
+        )
+        return result[0]
+
+    @bentoml.api
+    async def rembg_batch(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.batch_rembg([source_image])
         return result[0]
+
+    @bentoml.api
+    async def rembg(self, source_image: str = "") -> dict:
+        result = await self.rembg_batch.rembg(source_image)
+        return result
+
