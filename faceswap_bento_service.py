@@ -3,7 +3,7 @@ import base64
 import uuid
 import os
 from typing import List
-
+import rembg
 import aiohttp
 import bentoml
 from pydantic import BaseModel
@@ -13,7 +13,32 @@ class FaceSwapRequest(BaseModel):
     source_image: str
     target_image: str
 
+class SourceInputRequest(BaseModel):
+    source_image: str
+
 gpu_semaphore = asyncio.Semaphore(4)
+class RemBGModel:
+    async def rembg(self, input: SourceInputRequest) -> str:
+        try:
+            im = Image.open(BytesIO(base64.b64decode(input.source_image)))
+
+            image = rembg.remove(
+                im,
+                session=rembg.new_session("isnet-general-use"),
+                only_mask=False,
+                alpha_matting=False,
+                alpha_matting_foreground_threshold=240,
+                alpha_matting_background_threshold=10,
+                alpha_matting_erode_size=10,
+            )
+
+            with io.BytesIO() as output_bytes:
+                image.save(output_bytes, format="PNG")
+                img_str = base64.b64encode(output_bytes.getvalue()).decode("utf-8")
+            return {"image": img_str}
+        except Exception as e:
+            print(f"[EXCEPTION] Rembg failed: {e}")
+            return None
 class FaceSwapModel:
     async def swap_face(self, input: FaceSwapRequest) -> str:
        try:
@@ -104,14 +129,41 @@ class FaceSwapBatchService:
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
 
+@bentoml.service(
+    traffic={
+        "batch": True,
+        "timeout": 300,
+        "concurrency": 5,
+        "max_batch_size": 5,
+        "external_queue": False,
+        "batch_wait": 0.1
+    }
+)
+class RemoveBgBatchService:
+    def __init__(self):
+        self.model = RemBGModel()
+
+    @bentoml.api()
+    async def rembg(self, input: SourceInputRequest) -> dict:
+        print("[INFO] Processing single Rembg request")
+        response = await self.model.rembg(input)
+        return response
 
 @bentoml.service
 class AIToolsAPI:
     face_swap_batch = bentoml.depends(FaceSwapBatchService)
+    rembg_batch = bentoml.depends(RemoveBgBatchService)
 
     @bentoml.api
     async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
         result = await self.face_swap_batch.face_swap(
             FaceSwapRequest(source_image=source_image, target_image=target_image)
+        )
+        return result
+
+    @bentoml.api
+    async def rembg(self, source_image: str = "") -> dict:
+        result = await self.rembg_batch.rembg(
+            SourceInputRequest(source_image=source_image)
         )
         return result
