@@ -146,7 +146,7 @@ class RemoveBgBatchService:
     @bentoml.api()
     async def rembg(self, input: str) -> dict:
         print("[INFO] Processing single Rembg request")
-        response = await self.model.rembg(input)
+        response = await asyncio.to_thread(self.model.rembg, input)
         return response
 
     @bentoml.api(batchable=True)
@@ -154,7 +154,7 @@ class RemoveBgBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: str):
-            response = await self.model.rembg(input)
+            response = await asyncio.to_thread(self.model.rembg, input)
             return response
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
