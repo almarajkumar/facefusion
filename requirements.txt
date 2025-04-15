@@ -13,3 +13,4 @@ asyncio
 bentoml
 uvicorn
 pydantic
+rembg[gpu]
