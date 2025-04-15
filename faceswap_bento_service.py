@@ -146,6 +146,16 @@ class RemoveBgBatchService:
         response = await self.model.rembg(input)
         return response
 
+    @bentoml.api(batchable=True)
+    async def batch_rembg(self, inputs: List[str]) -> List[dict]:
+        print(f"[INFO] Processing batch of size: {len(inputs)}")
+
+        async def process_one(input: str):
+            img_base64 = await self.model.rembg(input)
+            return {"image": img_base64}
+
+        return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
+
 @bentoml.service
 class AIToolsAPI:
     face_swap_batch = bentoml.depends(FaceSwapBatchService)
@@ -160,5 +170,5 @@ class AIToolsAPI:
 
     @bentoml.api
     async def rembg(self, source_image: str = "") -> dict:
-        result = await self.rembg_batch.rembg(source_image)
-        return result
+        result = await self.rembg_batch.batch_rembg([source_image])
+        return result[0]
