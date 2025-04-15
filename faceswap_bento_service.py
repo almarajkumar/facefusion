@@ -99,7 +99,6 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
-            await asyncio.sleep(0.1)
             img_base64 = await self.model.swap_face(input)
             return {"image": img_base64}
 
@@ -112,7 +111,7 @@ class AIToolsAPI:
 
     @bentoml.api
     async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
-        result = await self.face_swap_batch.batch_face_swap([
+        result = await self.face_swap_batch.face_swap(
             FaceSwapRequest(source_image=source_image, target_image=target_image)
-        ])
-        return result[0]
+        )
+        return result
