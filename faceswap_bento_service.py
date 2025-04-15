@@ -18,7 +18,7 @@ class SourceInputRequest(BaseModel):
 
 gpu_semaphore = asyncio.Semaphore(4)
 class RemBGModel:
-    async def rembg(self, input: SourceInputRequest) -> str:
+    async def rembg(self, input: SourceInputRequest) -> dict:
         try:
             im = Image.open(BytesIO(base64.b64decode(input.source_image)))
 
@@ -148,6 +148,15 @@ class RemoveBgBatchService:
         print("[INFO] Processing single Rembg request")
         response = await self.model.rembg(input)
         return response
+
+    @bentoml.api(batchable=True)
+    async def batch_rembg(self, inputs: List[SourceInputRequest]) -> List[dict]:
+        print(f"[INFO] Processing batch of size: {len(inputs)}")
+
+        async def process_one(input: SourceInputRequest):
+            return await self.model.rembg(input)
+
+        return await asyncio.gather(*[process_one(i) for i in inputs])
 
 @bentoml.service
 class AIToolsAPI:
