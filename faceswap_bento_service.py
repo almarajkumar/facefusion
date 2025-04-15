@@ -13,7 +13,7 @@ class FaceSwapRequest(BaseModel):
     source_image: str
     target_image: str
 
-
+gpu_semaphore = asyncio.Semaphore(1)
 class FaceSwapModel:
     async def swap_face(self, input: FaceSwapRequest) -> str:
        try:
@@ -21,34 +21,34 @@ class FaceSwapModel:
             src_path = await self.decode_or_download_image(input.source_image, unique_id, "source")
             tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
+            async with gpu_semaphore:
+                process = await asyncio.create_subprocess_exec(
+                    "python3", "facefusion.py", "headless-run",
+                    "-s", src_path, "-t", tgt_path, "-o", output_path,
+                    "--face-selector-order", "top-bottom",
+                    "--processors", "face_swapper", "face_enhancer",
+                    "--execution-providers", "cuda",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
 
-            process = await asyncio.create_subprocess_exec(
-                "python3", "facefusion.py", "headless-run",
-                "-s", src_path, "-t", tgt_path, "-o", output_path,
-                "--face-selector-order", "top-bottom",
-                "--processors", "face_swapper", "face_enhancer",
-                "--execution-providers", "cuda",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
+                stdout_text = stdout.decode().strip()
+                stderr_text = stderr.decode().strip()
 
-            stdout_text = stdout.decode().strip()
-            stderr_text = stderr.decode().strip()
+                print(f"[STDOUT]\n{stdout_text}")
+                print(f"[STDERR]\n{stderr_text}")
 
-            print(f"[STDOUT]\n{stdout_text}")
-            print(f"[STDERR]\n{stderr_text}")
+                if process.returncode != 0:
+                    print(f"[ERROR] Process exited with code {process.returncode}")
+                    return None
 
-            if process.returncode != 0:
-                print(f"[ERROR] Process exited with code {process.returncode}")
-                return None
+                if not os.path.exists(output_path):
+                    print(f"[ERROR] Output file not found at {output_path}")
+                    return None
 
-            if not os.path.exists(output_path):
-                print(f"[ERROR] Output file not found at {output_path}")
-                return None
-
-            with open(output_path, "rb") as f:
-                return base64.b64encode(f.read()).decode("utf-8")
+                with open(output_path, "rb") as f:
+                    return base64.b64encode(f.read()).decode("utf-8")
        except Exception as e:
             print(f"[EXCEPTION] Face swap failed: {e}")
             return None
