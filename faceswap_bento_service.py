@@ -11,6 +11,8 @@ from PIL import Image
 import base64
 import io
 from io import BytesIO
+import subprocess
+import requests
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -43,62 +45,54 @@ class RemBGModel:
             print(f"[EXCEPTION] Rembg failed: {e}")
             return None
 class FaceSwapModel:
-    async def swap_face(self, input: FaceSwapRequest) -> str:
-       try:
+    def swap_face(self, input: FaceSwapRequest) -> str:
+        try:
             unique_id = str(uuid.uuid4())
-            src_path = await self.decode_or_download_image(input.source_image, unique_id, "source")
-            tgt_path = await self.decode_or_download_image(input.target_image, unique_id, "target")
+            src_path = self.decode_or_download_image(input.source_image, unique_id, "source")
+            tgt_path = self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
-            async with gpu_semaphore:
-                process = await asyncio.create_subprocess_exec(
+
+            result = subprocess.run(
+                [
                     "python3", "facefusion.py", "headless-run",
                     "-s", src_path, "-t", tgt_path, "-o", output_path,
                     "--face-selector-order", "top-bottom",
                     "--processors", "face_swapper", "face_enhancer",
-                    "--execution-providers", "cuda",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                stdout, stderr = await process.communicate()
+                    "--execution-providers", "cuda"
+                ],
+                capture_output=True,
+                text=True
+            )
 
-                stdout_text = stdout.decode().strip()
-                stderr_text = stderr.decode().strip()
+            print(f"[STDOUT]\n{result.stdout}")
+            print(f"[STDERR]\n{result.stderr}")
 
-                print(f"[STDOUT]\n{stdout_text}")
-                print(f"[STDERR]\n{stderr_text}")
+            if result.returncode != 0:
+                print(f"[ERROR] Process exited with code {result.returncode}")
+                return None
 
-                if process.returncode != 0:
-                    print(f"[ERROR] Process exited with code {process.returncode}")
-                    return None
+            if not os.path.exists(output_path):
+                print(f"[ERROR] Output file not found at {output_path}")
+                return None
 
-                if not os.path.exists(output_path):
-                    print(f"[ERROR] Output file not found at {output_path}")
-                    return None
+            with open(output_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
 
-                with open(output_path, "rb") as f:
-                    return base64.b64encode(f.read()).decode("utf-8")
-       except Exception as e:
+        except Exception as e:
             print(f"[EXCEPTION] Face swap failed: {e}")
             return None
 
-    async def decode_or_download_image(self, data: str, unique_id: str, image_type: str) -> str:
+    def decode_or_download_image(self, data: str, unique_id: str, image_type: str) -> str:
+        file_path = f"/tmp/{image_type}_{unique_id}.png"
         if data.startswith("http"):
-            return await self.download_image(data, unique_id, image_type)
+            response = requests.get(data)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to download image from URL: {data}")
+            with open(file_path, "wb") as f:
+                f.write(response.content)
         else:
-            file_path = f"/tmp/{image_type}_{unique_id}.png"
             with open(file_path, "wb") as f:
                 f.write(base64.b64decode(data))
-            return file_path
-
-    async def download_image(self, url: str, unique_id: str, image_type: str) -> str:
-        file_path = f"/tmp/{image_type}_{unique_id}.png"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    with open(file_path, "wb") as f:
-                        f.write(await response.read())
-                else:
-                    raise ValueError(f"Failed to download image from URL: {url}")
         return file_path
 
 
@@ -127,7 +121,7 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
-            img_base64 = await self.model.swap_face(input)
+            img_base64 = await asyncio.to_thread(self.model.swap_face, input)
             return {"image": img_base64}
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
