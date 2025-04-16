@@ -88,7 +88,7 @@ class FaceSwapModel:
             "--face-selector-order", "top-bottom",
             "--processors", "face_swapper", "face_enhancer",
             "--execution-providers", "cuda",
-			"--execution-thread-count", "4",
+            "--execution-thread-count", "4",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -148,13 +148,19 @@ class RemoveBgBatchService:
 
     @bentoml.api(batchable=True)
     async def batch_rembg(self, inputs: List[RemBGRequest]) -> List[dict]:
-        print(f"[INFO] Processing batch of size: {len(inputs)}")
+        print(f"[INFO] Received batch of {len(inputs)} requests")
 
-        async def process_one(input: RemBGRequest):
-            img_base64 = await asyncio.to_thread(self.model.rembg, input)
-            return {"image": img_base64}
+        async def process_batch(batch_inputs: List[RemBGRequest]) -> List[dict]:
+            print(f"[INFO] Processing batch of size: {len(batch_inputs)}")
 
-        return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
+            async def process_one(input: RemBGRequest):
+                img_base64 = await asyncio.to_thread(self.model.rembg, input)
+                return {"image": img_base64}
+
+            return await asyncio.gather(*[process_one(i) for i in batch_inputs], return_exceptions=True)
+
+        task = asyncio.create_task(process_batch(inputs))
+        return await task
 
 
 @bentoml.service
