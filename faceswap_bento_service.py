@@ -13,8 +13,6 @@ import io
 from io import BytesIO
 import subprocess
 import requests
-import threading
-from concurrent.futures import ThreadPoolExecutor
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -23,7 +21,7 @@ class FaceSwapRequest(BaseModel):
 class RemBGRequest(BaseModel):
     source_image: str
 
-executor = ThreadPoolExecutor(max_workers=5)
+
 class RemBGModel:
     def rembg(self, input: RemBGRequest) -> str:
         try:
