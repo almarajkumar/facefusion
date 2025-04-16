@@ -89,7 +89,6 @@ class FaceSwapModel:
             "--processors", "face_swapper", "face_enhancer",
             "--execution-providers", "cuda",
 			"--execution-thread-count", "4",
-            "--log-level", "debug",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
