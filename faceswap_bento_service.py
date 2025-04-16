@@ -156,11 +156,11 @@ class RemoveBgBatchService:
     async def batch_rembg(self, inputs: List[RemBGRequest]) -> List[dict]:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
-        def run_all_sync():
-            return [self.model.rembg(i) for i in inputs]
+        async def process_one(input: RemBGRequest):
+            img_base64 = await self.model.rembg(input)
+            return {"image": img_base64}
 
-        results = await asyncio.to_thread(run_all_sync)
-        return [{"image": r} for r in results]
+        return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
 
 
 @bentoml.service
