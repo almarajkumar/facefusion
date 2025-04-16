@@ -164,8 +164,8 @@ class AIToolsAPI:
 
     @bentoml.api
     async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
-        result = await self.face_swap_batch.face_swap(
-            FaceSwapRequest(source_image=source_image, target_image=target_image)
+        result = await self.face_swap_batch.batch_face_swap(
+            [FaceSwapRequest(source_image=source_image, target_image=target_image)]
         )
         return result
 
