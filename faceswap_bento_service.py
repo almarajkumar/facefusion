@@ -13,6 +13,7 @@ import io
 from io import BytesIO
 import subprocess
 import requests
+import threading
 
 class FaceSwapRequest(BaseModel):
     source_image: str
@@ -21,7 +22,7 @@ class FaceSwapRequest(BaseModel):
 class RemBGRequest(BaseModel):
     source_image: str
 
-gpu_semaphore = asyncio.Semaphore(2)
+gpu_semaphore = threading.Semaphore(2)
 class RemBGModel:
     def rembg(self, input: RemBGRequest) -> str:
         try:
