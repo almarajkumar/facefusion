@@ -61,6 +61,7 @@ class FaceSwapModel:
                     "--face-selector-order", "top-bottom",
                     "--processors", "face_swapper", "face_enhancer",
                     "--execution-providers", "cuda",
+                    "--execution-thread-count", "4",
                     "--log-level", "debug"
 
                 ],
@@ -85,10 +86,6 @@ class FaceSwapModel:
         except Exception as e:
             print(f"[EXCEPTION] Face swap failed: {e}")
             return None
-
-    async def run_face_swap_in_executor(self, input: FaceSwapRequest):
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(executor, self.swap_face, input)
 
     def decode_or_download_image(self, data: str, unique_id: str, image_type: str) -> str:
         file_path = f"/tmp/{image_type}_{unique_id}.png"
@@ -129,7 +126,7 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
-            img_base64 = await self.model.swap_face(input)
+            img_base64 = await asyncio.to_thread(self.model.swap_face, input)
             return {"image": img_base64}
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
