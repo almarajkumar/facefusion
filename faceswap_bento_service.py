@@ -21,7 +21,7 @@ class RemBGRequest(BaseModel):
 
 gpu_semaphore = asyncio.Semaphore(4)
 class RemBGModel:
-    async def rembg(self, input: RemBGRequest) -> str:
+    def rembg(self, input: RemBGRequest) -> str:
         try:
             im = Image.open(BytesIO(base64.b64decode(input.source_image)))
 
@@ -157,7 +157,7 @@ class RemoveBgBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: RemBGRequest):
-            img_base64 = await self.model.rembg(input)
+            img_base64 = await asyncio.to_thread(self.model.rembg, input)
             return {"image": img_base64}
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
