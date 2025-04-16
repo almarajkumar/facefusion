@@ -47,34 +47,17 @@ class RemBGModel:
             print(f"[EXCEPTION] Rembg failed: {e}")
             return None
 class FaceSwapModel:
-    def swap_face(self, input: FaceSwapRequest) -> str:
+    async def swap_face(self, input: FaceSwapRequest) -> str:
         try:
             unique_id = str(uuid.uuid4())
-            src_path = self.decode_or_download_image(input.source_image, unique_id, "source")
-            tgt_path = self.decode_or_download_image(input.target_image, unique_id, "target")
+            src_path = await  self.decode_or_download_image(input.source_image, unique_id, "source")
+            tgt_path = await  self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
 
-            result = subprocess.run(
-                [
-                    "python3", "facefusion.py", "headless-run",
-                    "-s", src_path, "-t", tgt_path, "-o", output_path,
-                    "--face-selector-order", "top-bottom",
-                    "--processors", "face_swapper", "face_enhancer",
-                    "--execution-providers", "cuda",
-                    "--execution-thread-count", "4",
-                    "--log-level", "debug"
+            stdout, stderr = await self.async_run_face_swap(src_path, tgt_path, output_path)
 
-                ],
-                capture_output=True,
-                text=True
-            )
-
-            print(f"[STDOUT]\n{result.stdout}")
-            print(f"[STDERR]\n{result.stderr}")
-
-            if result.returncode != 0:
-                print(f"[ERROR] Process exited with code {result.returncode}")
-                return None
+            print(f"[STDOUT]\n{stdout}")
+            print(f"[STDERR]\n{stderr}")
 
             if not os.path.exists(output_path):
                 print(f"[ERROR] Output file not found at {output_path}")
@@ -87,7 +70,7 @@ class FaceSwapModel:
             print(f"[EXCEPTION] Face swap failed: {e}")
             return None
 
-    def decode_or_download_image(self, data: str, unique_id: str, image_type: str) -> str:
+    async def decode_or_download_image(self, data: str, unique_id: str, image_type: str) -> str:
         file_path = f"/tmp/{image_type}_{unique_id}.png"
         if data.startswith("http"):
             response = requests.get(data)
@@ -99,6 +82,21 @@ class FaceSwapModel:
             with open(file_path, "wb") as f:
                 f.write(base64.b64decode(data))
         return file_path
+
+    async def async_run_face_swap(self, src_path, tgt_path, output_path):
+        process = await asyncio.create_subprocess_exec(
+            "python3", "facefusion.py", "headless-run",
+            "-s", src_path, "-t", tgt_path, "-o", output_path,
+            "--face-selector-order", "top-bottom",
+            "--processors", "face_swapper", "face_enhancer",
+            "--execution-providers", "cuda",
+			"--execution-thread-count", "4",
+            "--log-level", "debug",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        return stdout, stderr
 
 
 @bentoml.service(
@@ -126,7 +124,7 @@ class FaceSwapBatchService:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
 
         async def process_one(input: FaceSwapRequest):
-            img_base64 = await asyncio.to_thread(self.model.swap_face, input)
+            img_base64 = await self.model.swap_face(input)
             return {"image": img_base64}
 
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
