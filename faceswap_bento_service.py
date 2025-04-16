@@ -21,7 +21,7 @@ class FaceSwapRequest(BaseModel):
 class RemBGRequest(BaseModel):
     source_image: str
 
-gpu_semaphore = asyncio.Semaphore(4)
+gpu_semaphore = asyncio.Semaphore(2)
 class RemBGModel:
     def rembg(self, input: RemBGRequest) -> str:
         try:
@@ -51,32 +51,32 @@ class FaceSwapModel:
             src_path = self.decode_or_download_image(input.source_image, unique_id, "source")
             tgt_path = self.decode_or_download_image(input.target_image, unique_id, "target")
             output_path = f"/tmp/output_{unique_id}.png"
+            with gpu_semaphore:
+                result = subprocess.run(
+                    [
+                        "python3", "facefusion.py", "headless-run",
+                        "-s", src_path, "-t", tgt_path, "-o", output_path,
+                        "--face-selector-order", "top-bottom",
+                        "--processors", "face_swapper", "face_enhancer",
+                        "--execution-providers", "cuda"
+                    ],
+                    capture_output=True,
+                    text=True
+                )
 
-            result = subprocess.run(
-                [
-                    "python3", "facefusion.py", "headless-run",
-                    "-s", src_path, "-t", tgt_path, "-o", output_path,
-                    "--face-selector-order", "top-bottom",
-                    "--processors", "face_swapper", "face_enhancer",
-                    "--execution-providers", "cuda"
-                ],
-                capture_output=True,
-                text=True
-            )
+                print(f"[STDOUT]\n{result.stdout}")
+                print(f"[STDERR]\n{result.stderr}")
 
-            print(f"[STDOUT]\n{result.stdout}")
-            print(f"[STDERR]\n{result.stderr}")
+                if result.returncode != 0:
+                    print(f"[ERROR] Process exited with code {result.returncode}")
+                    return None
 
-            if result.returncode != 0:
-                print(f"[ERROR] Process exited with code {result.returncode}")
-                return None
+                if not os.path.exists(output_path):
+                    print(f"[ERROR] Output file not found at {output_path}")
+                    return None
 
-            if not os.path.exists(output_path):
-                print(f"[ERROR] Output file not found at {output_path}")
-                return None
-
-            with open(output_path, "rb") as f:
-                return base64.b64encode(f.read()).decode("utf-8")
+                with open(output_path, "rb") as f:
+                    return base64.b64encode(f.read()).decode("utf-8")
 
         except Exception as e:
             print(f"[EXCEPTION] Face swap failed: {e}")
