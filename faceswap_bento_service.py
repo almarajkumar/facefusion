@@ -176,13 +176,13 @@ class AIToolsAPI:
     @bentoml.api
     async def remove_background(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.rembg(
-            RemBGRequest(source_image)
+            RemBGRequest(source_image=source_image)
         )
         return result
 
     @bentoml.api
     async def remove_background_batch(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.batch_rembg(
-            [RemBGRequest(source_image)]
+            [RemBGRequest(source_image=source_image)]
         )
         return result[0]
