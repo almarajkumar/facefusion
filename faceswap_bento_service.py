@@ -167,17 +167,10 @@ class AIToolsAPI:
         result = await self.face_swap_batch.batch_face_swap(
             [FaceSwapRequest(source_image=source_image, target_image=target_image)]
         )
-        return result
+        return result[0]
 
     @bentoml.api
     async def remove_background(self, source_image: str = "") -> dict:
-        result = await self.rembg_batch.rembg(
-            RemBGRequest(source_image = source_image)
-        )
-        return result
-
-    @bentoml.api
-    async def remove_background_batch(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.batch_rembg(
             [RemBGRequest(source_image = source_image)]
         )
