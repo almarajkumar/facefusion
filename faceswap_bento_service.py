@@ -106,7 +106,7 @@ class FaceSwapModel:
         "concurrency": 5,
         "max_batch_size": 5,
         "external_queue": False,
-        "batch_wait": 0.1
+        "batch_wait": 1
     }
 )
 class FaceSwapBatchService:
@@ -136,7 +136,7 @@ class FaceSwapBatchService:
         "concurrency": 5,
         "max_batch_size": 5,
         "external_queue": False,
-        "batch_wait": 0.1
+        "batch_wait": 1
     }
 )
 class RemoveBgBatchService:
