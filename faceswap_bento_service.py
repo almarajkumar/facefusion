@@ -59,7 +59,9 @@ class FaceSwapModel:
                         "-s", src_path, "-t", tgt_path, "-o", output_path,
                         "--face-selector-order", "top-bottom",
                         "--processors", "face_swapper", "face_enhancer",
-                        "--execution-providers", "cuda"
+                        "--execution-providers", "cuda",
+						"--log-level", "debug"
+
                     ],
                     capture_output=True,
                     text=True
