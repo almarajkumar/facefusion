@@ -155,17 +155,16 @@ class RemoveBgBatchService:
     @bentoml.api(batchable=True)
     async def batch_rembg(self, inputs: List[RemBGRequest]) -> List[dict]:
         print(f"[INFO] Processing batch of size: {len(inputs)}")
-
         async def process_one(input: RemBGRequest):
             response = await asyncio.to_thread(self.model.rembg, input)
             return response
-
         return await asyncio.gather(*[process_one(i) for i in inputs], return_exceptions=True)
 
 @bentoml.service
 class AIToolsAPI:
-    face_swap_batch = bentoml.depends(FaceSwapBatchService)
-    rembg_batch = bentoml.depends(RemoveBgBatchService)
+    def __init__(self):
+        self.face_swap_batch = bentoml.depends(FaceSwapBatchService)
+        self.rembg_batch = bentoml.depends(RemoveBgBatchService)
 
     @bentoml.api
     async def faceswap(self, source_image: str = "", target_image: str = "") -> dict:
@@ -175,15 +174,15 @@ class AIToolsAPI:
         return result
 
     @bentoml.api
-    async def rembg(self, source_image: str = "") -> dict:
+    async def remove_background(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.rembg(
-            RemBGRequest(source_image = source_image)
+            RemBGRequest(source_image)
         )
         return result
 
     @bentoml.api
-    async def rembg_batch(self, source_image: str = "") -> dict:
+    async def remove_background_batch(self, source_image: str = "") -> dict:
         result = await self.rembg_batch.batch_rembg(
-            [RemBGRequest(source_image=source_image)]
+            [RemBGRequest(source_image)]
         )
         return result[0]
